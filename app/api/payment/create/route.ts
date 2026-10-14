@@ -21,11 +21,84 @@ const courses = {
 
 type CourseId = keyof typeof courses;
 
+async function sendNewOrderToTelegram({
+  invoiceId,
+  courseName,
+  amount,
+  name,
+  telegram,
+  email,
+}: {
+  invoiceId: string;
+  courseName: string;
+  amount: number;
+  name: string;
+  telegram: string;
+  email: string;
+}) {
+  const botToken =
+    process.env.TELEGRAM_BOT_TOKEN;
+
+  const chatId =
+    process.env.TELEGRAM_CHAT_ID;
+
+  if (!botToken || !chatId) {
+    console.error(
+      "Telegram environment variables are missing"
+    );
+
+    return;
+  }
+
+  const amountInUah = amount / 100;
+
+  const message = [
+    "🟡 НОВЕ ЗАМОВЛЕННЯ AVESTA",
+    "",
+    `Курс: ${courseName}`,
+    `Сума: ${amountInUah} грн`,
+    "",
+    `👤 Ім'я: ${name}`,
+    `✈️ Telegram: ${telegram}`,
+    `📧 Email: ${email}`,
+    "",
+    "Статус: очікує оплату",
+    `Invoice ID: ${invoiceId}`,
+  ].join("\n");
+
+  const response = await fetch(
+    `https://api.telegram.org/bot${botToken}/sendMessage`,
+    {
+      method: "POST",
+
+      headers: {
+        "Content-Type": "application/json",
+      },
+
+      body: JSON.stringify({
+        chat_id: chatId,
+        text: message,
+      }),
+    }
+  );
+
+  if (!response.ok) {
+    const errorText =
+      await response.text();
+
+    console.error(
+      "Telegram new order notification error:",
+      errorText
+    );
+  }
+}
+
 export async function POST(request: Request) {
   try {
     const body = await request.json();
 
-    const courseId = Number(body.courseId);
+    const courseId =
+      Number(body.courseId);
 
     const name = String(
       body.customer?.name || ""
@@ -43,7 +116,10 @@ export async function POST(request: Request) {
 
     /* Проверяем курс */
 
-    if (!courseId || !(courseId in courses)) {
+    if (
+      !courseId ||
+      !(courseId in courses)
+    ) {
       return NextResponse.json(
         {
           error: "Невідомий курс",
@@ -54,9 +130,13 @@ export async function POST(request: Request) {
       );
     }
 
-    /* Проверяем данные покупателя */
+    /* Проверяем контакты */
 
-    if (!name || !telegram || !email) {
+    if (
+      !name ||
+      !telegram ||
+      !email
+    ) {
       return NextResponse.json(
         {
           error:
@@ -68,10 +148,12 @@ export async function POST(request: Request) {
       );
     }
 
-    /* Простая проверка Email */
+    /* Проверяем email */
 
     const emailIsValid =
-      /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+      /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(
+        email
+      );
 
     if (!emailIsValid) {
       return NextResponse.json(
@@ -84,7 +166,7 @@ export async function POST(request: Request) {
       );
     }
 
-    /* Ограничиваем длину данных */
+    /* Ограничиваем длину */
 
     if (
       name.length > 100 ||
@@ -93,7 +175,8 @@ export async function POST(request: Request) {
     ) {
       return NextResponse.json(
         {
-          error: "Контактні дані занадто довгі",
+          error:
+            "Контактні дані занадто довгі",
         },
         {
           status: 400,
@@ -104,10 +187,13 @@ export async function POST(request: Request) {
     const course =
       courses[courseId as CourseId];
 
-    const token = process.env.MONO_TOKEN;
+    const token =
+      process.env.MONO_TOKEN;
 
     if (!token) {
-      console.error("MONO_TOKEN is missing");
+      console.error(
+        "MONO_TOKEN is missing"
+      );
 
       return NextResponse.json(
         {
@@ -120,14 +206,10 @@ export async function POST(request: Request) {
       );
     }
 
-    /*
-      reference связывает платеж с курсом.
-      Например:
-      course-3-xxxxxxxx
-    */
-
     const reference =
       `course-${courseId}-${crypto.randomUUID()}`;
+
+    /* Создаём invoice */
 
     const monoResponse = await fetch(
       "https://api.monobank.ua/api/merchant/invoice/create",
@@ -135,7 +217,8 @@ export async function POST(request: Request) {
         method: "POST",
 
         headers: {
-          "Content-Type": "application/json",
+          "Content-Type":
+            "application/json",
           "X-Token": token,
         },
 
@@ -153,15 +236,9 @@ export async function POST(request: Request) {
             comment:
               `AVESTA — ${course.name}`,
 
-            customerEmails: [email],
-
-            metadata: {
-              courseId: String(courseId),
-              courseName: course.name,
-              customerName: name,
-              customerTelegram: telegram,
-              customerEmail: email,
-            },
+            customerEmails: [
+              email,
+            ],
           },
 
           redirectUrl:
@@ -173,7 +250,8 @@ export async function POST(request: Request) {
       }
     );
 
-    const data = await monoResponse.json();
+    const data =
+      await monoResponse.json();
 
     if (!monoResponse.ok) {
       console.error(
@@ -187,10 +265,47 @@ export async function POST(request: Request) {
             "Не вдалося створити платіж",
         },
         {
-          status: monoResponse.status,
+          status:
+            monoResponse.status,
         }
       );
     }
+
+    if (
+      !data.invoiceId ||
+      !data.pageUrl
+    ) {
+      console.error(
+        "Invalid Monobank invoice response:",
+        data
+      );
+
+      return NextResponse.json(
+        {
+          error:
+            "Некоректна відповідь платіжної системи",
+        },
+        {
+          status: 500,
+        }
+      );
+    }
+
+    /*
+      Invoice уже существует.
+
+      Теперь отправляем контакты
+      покупателя в Telegram.
+    */
+
+    await sendNewOrderToTelegram({
+      invoiceId: data.invoiceId,
+      courseName: course.name,
+      amount: course.price,
+      name,
+      telegram,
+      email,
+    });
 
     return NextResponse.json({
       invoiceId: data.invoiceId,
@@ -204,7 +319,8 @@ export async function POST(request: Request) {
 
     return NextResponse.json(
       {
-        error: "Помилка створення платежу",
+        error:
+          "Помилка створення платежу",
       },
       {
         status: 500,

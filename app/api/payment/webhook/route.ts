@@ -22,30 +22,38 @@ const courses = {
   },
 } as const;
 
-/* =========================
-   PUBLIC KEY MONOBANK
-========================= */
-
+/*
+  Получаем публичный ключ Monobank.
+  Он нужен для проверки подписи webhook.
+*/
 async function getMonoPublicKey(
   forceRefresh = false
 ) {
-  if (cachedPublicKey && !forceRefresh) {
+  if (
+    cachedPublicKey &&
+    !forceRefresh
+  ) {
     return cachedPublicKey;
   }
 
-  const token = process.env.MONO_TOKEN;
+  const token =
+    process.env.MONO_TOKEN;
 
   if (!token) {
-    throw new Error("MONO_TOKEN is missing");
+    throw new Error(
+      "MONO_TOKEN is missing"
+    );
   }
 
   const response = await fetch(
     "https://api.monobank.ua/api/merchant/pubkey",
     {
       method: "GET",
+
       headers: {
         "X-Token": token,
       },
+
       cache: "no-store",
     }
   );
@@ -56,7 +64,8 @@ async function getMonoPublicKey(
     );
   }
 
-  const data = await response.json();
+  const data =
+    await response.json();
 
   if (!data.key) {
     throw new Error(
@@ -72,10 +81,10 @@ async function getMonoPublicKey(
   return cachedPublicKey;
 }
 
-/* =========================
-   SIGNATURE
-========================= */
-
+/*
+  Проверяем, что webhook действительно
+  пришёл от Monobank.
+*/
 function verifyMonoSignature(
   body: string,
   signature: string,
@@ -89,21 +98,27 @@ function verifyMonoSignature(
 
   return verifier.verify(
     publicKey,
-    Buffer.from(signature, "base64")
+    Buffer.from(
+      signature,
+      "base64"
+    )
   );
 }
 
-/* =========================
-   GET INVOICE FROM MONO
-========================= */
-
+/*
+  После webhook дополнительно спрашиваем
+  Monobank о состоянии invoice.
+*/
 async function getInvoiceStatus(
   invoiceId: string
 ) {
-  const token = process.env.MONO_TOKEN;
+  const token =
+    process.env.MONO_TOKEN;
 
   if (!token) {
-    throw new Error("MONO_TOKEN is missing");
+    throw new Error(
+      "MONO_TOKEN is missing"
+    );
   }
 
   const response = await fetch(
@@ -112,15 +127,18 @@ async function getInvoiceStatus(
     )}`,
     {
       method: "GET",
+
       headers: {
         "X-Token": token,
       },
+
       cache: "no-store",
     }
   );
 
   if (!response.ok) {
-    const errorText = await response.text();
+    const errorText =
+      await response.text();
 
     console.error(
       "MONO STATUS ERROR:",
@@ -136,10 +154,10 @@ async function getInvoiceStatus(
   return response.json();
 }
 
-/* =========================
-   TELEGRAM
-========================= */
-
+/*
+  Отправляем сообщение только
+  после подтверждённой успешной оплаты.
+*/
 async function sendTelegramNotification(
   invoice: any
 ) {
@@ -150,11 +168,9 @@ async function sendTelegramNotification(
     process.env.TELEGRAM_CHAT_ID;
 
   if (!botToken || !chatId) {
-    console.error(
+    throw new Error(
       "Telegram environment variables are missing"
     );
-
-    return;
   }
 
   const amount =
@@ -164,39 +180,28 @@ async function sendTelegramNotification(
     amount / 100;
 
   /*
-    Сначала пытаемся получить courseId
-    из metadata.
-  */
+    При создании платежа мы записываем:
 
-  const metadata =
-    invoice.merchantPaymInfo?.metadata || {};
-
-  let courseId = Number(
-    metadata.courseId || 0
-  );
-
-  /*
-    Если metadata по какой-то причине нет,
-    пробуем reference:
     course-3-xxxxxxxx
+
+    Поэтому здесь можем определить,
+    какой именно курс был оплачен.
   */
+  const reference =
+    String(invoice.reference || "");
 
-  if (!courseId) {
-    const reference =
-      invoice.reference ||
-      invoice.merchantPaymInfo?.reference ||
-      "";
+  const match =
+    reference.match(
+      /^course-(\d+)-/
+    );
 
-    const match =
-      reference.match(/^course-(\d+)-/);
-
-    if (match) {
-      courseId = Number(match[1]);
-    }
-  }
+  const courseId = match
+    ? Number(match[1])
+    : 0;
 
   const course =
-    courseId && courseId in courses
+    courseId &&
+    courseId in courses
       ? courses[
           courseId as keyof typeof courses
         ]
@@ -204,15 +209,12 @@ async function sendTelegramNotification(
 
   const courseName =
     course?.name ||
-    metadata.courseName ||
     "Курс AVESTA";
 
   /*
-    Проверяем сумму.
-    Если курс определён, сумма должна
-    полностью совпадать.
+    Если курс определился,
+    дополнительно проверяем сумму.
   */
-
   if (
     course &&
     course.price !== amount
@@ -220,44 +222,32 @@ async function sendTelegramNotification(
     console.error(
       "PAYMENT AMOUNT MISMATCH:",
       {
-        invoiceId: invoice.invoiceId,
+        invoiceId:
+          invoice.invoiceId,
         courseId,
-        expected: course.price,
-        received: amount,
+        expected:
+          course.price,
+        received:
+          amount,
       }
     );
 
-    return;
+    throw new Error(
+      "Payment amount mismatch"
+    );
   }
 
-  /* Контактные данные */
-
-  const customerName =
-    metadata.customerName || "—";
-
-  const customerTelegram =
-    metadata.customerTelegram || "—";
-
-  const customerEmail =
-    metadata.customerEmail ||
-    invoice.merchantPaymInfo
-      ?.customerEmails?.[0] ||
-    "—";
-
   const message = [
-    "💳 НОВА ОПЛАТА AVESTA",
+    "✅ ЗАМОВЛЕННЯ УСПІШНО ОПЛАЧЕНО",
     "",
     `Курс: ${courseName}`,
     `Сума: ${amountInUah} грн`,
     "",
-    `👤 Ім'я: ${customerName}`,
-    `✈️ Telegram: ${customerTelegram}`,
-    `📧 Email: ${customerEmail}`,
-    "",
-    "Статус: успішно",
     `Invoice ID: ${
       invoice.invoiceId || "—"
     }`,
+    "",
+    "➡️ Можна видавати доступ",
   ].join("\n");
 
   const response = await fetch(
@@ -292,14 +282,13 @@ async function sendTelegramNotification(
   }
 }
 
-/* =========================
-   WEBHOOK
-========================= */
-
 export async function POST(
   request: Request
 ) {
   try {
+    /*
+      Берём подпись Monobank.
+    */
     const signature =
       request.headers.get("x-sign");
 
@@ -310,7 +299,8 @@ export async function POST(
 
       return NextResponse.json(
         {
-          error: "Invalid signature",
+          error:
+            "Invalid signature",
         },
         {
           status: 401,
@@ -318,6 +308,10 @@ export async function POST(
       );
     }
 
+    /*
+      Для проверки подписи нужен
+      оригинальный body как текст.
+    */
     const rawBody =
       await request.text();
 
@@ -332,10 +326,9 @@ export async function POST(
       );
 
     /*
-      Если mono поменял ключ,
-      обновляем его и проверяем ещё раз.
+      Если ключ изменился,
+      получаем его ещё раз.
     */
-
     if (!isValid) {
       publicKey =
         await getMonoPublicKey(true);
@@ -355,7 +348,8 @@ export async function POST(
 
       return NextResponse.json(
         {
-          error: "Invalid signature",
+          error:
+            "Invalid signature",
         },
         {
           status: 401,
@@ -381,28 +375,22 @@ export async function POST(
     );
 
     /*
-      Нас интересует только
-      успешная оплата.
+      Telegram отправляем ТОЛЬКО
+      при успешной оплате.
     */
-
     if (
       webhook.status === "success" &&
       webhook.invoiceId
     ) {
-      /*
-        Получаем invoice непосредственно
-        с сервера Monobank.
-      */
-
       const invoice =
         await getInvoiceStatus(
           webhook.invoiceId
         );
 
       /*
-        Дополнительная серверная проверка.
+        Ещё раз проверяем статус
+        непосредственно через Monobank.
       */
-
       if (
         invoice.status !== "success"
       ) {
@@ -423,9 +411,8 @@ export async function POST(
       }
 
       /*
-        invoiceId должен совпадать.
+        Проверяем Invoice ID.
       */
-
       if (
         invoice.invoiceId !==
         webhook.invoiceId

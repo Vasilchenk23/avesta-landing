@@ -42,7 +42,7 @@ export default function Footer() {
             </a>
 
             <a
-              href="https://instagram.com/tanya_avesta?xtok=MTVjeXdvenpjNzN2Yw%3D%3D"
+              href="https://www.instagram.com/tanya_avesta/"
               target="_blank"
               rel="noopener noreferrer"
             >

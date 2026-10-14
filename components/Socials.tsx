@@ -26,7 +26,7 @@ export default function Socials() {
           </a>
 
           <a
-            href="https://instagram.com/tanya_avesta?xtok=MTVjeXdvenpjNzN2Yw%3D%3D"
+            href="https://www.instagram.com/tanya_avesta/"
             className="socials__link"
             target="_blank"
             rel="noopener noreferrer"
