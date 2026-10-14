@@ -1885,94 +1885,66 @@ box-shadow: 0 4px 14px rgba(0, 0, 0, 0.22);
   align-items: center;
   justify-content: center;
 
-  gap: 26px;
+  gap: 28px;
 }
 
 .header__nav a {
   position: relative;
 
-  color: rgba(255, 255, 255, 0.88);
+  color: rgba(255, 255, 255, 0.9);
 
   font-family: Arial, Helvetica, sans-serif;
-  font-size: 13px;
+
+
+  font-size: 17px;
   font-weight: 600;
   line-height: 1;
-  letter-spacing: 0.8px;
+  letter-spacing: 0.5px;
 
   text-decoration: none;
 
-  transition:
-    color 0.25s ease,
-    opacity 0.25s ease;
+  transition: color 0.25s ease;
 }
 
-/* Тонкая линия под обычными пунктами */
+/* ОРАНЖЕВАЯ ЛИНИЯ */
 
 .header__nav a::after {
   content: "";
 
   position: absolute;
-  left: 50%;
-  bottom: -8px;
+  left: 0;
+  bottom: -9px;
 
   width: 0;
-  height: 1px;
+  height: 2px;
 
-  background: #f3e4bd;
+  background: #df821d;
 
-  transform: translateX(-50%);
-
-  transition: width 0.25s ease;
+  transition: width 0.3s ease;
 }
 
+/* Обычные пункты — линия появляется при наведении */
+
 .header__nav a:hover {
-  color: #f3e4bd;
+  color: #ffffff;
 }
 
 .header__nav a:hover::after {
   width: 100%;
 }
 
-/* Акцент "Про мене" */
+/* ПРО МЕНЕ — линия видна постоянно */
 
 .header__nav .header__about-link {
-  padding: 12px 20px;
-
-  background: #df821d;
   color: #ffffff;
-
-  border-radius: 10px;
-
-  box-shadow:
-    0 5px 12px rgba(0, 0, 0, 0.16),
-    0 10px 22px rgba(0, 0, 0, 0.08);
-
-  transition:
-    opacity 0.3s ease,
-    transform 0.3s ease,
-    box-shadow 0.3s ease;
+   font-size: 18px;
 }
-
-/* Убираем линию под этой кнопкой */
 
 .header__nav .header__about-link::after {
-  display: none;
+  width: 100%;
 }
 
-/* Затухание */
-
-.header__nav .header__about-link:hover {
-  color: #ffffff;
-
-  opacity: 0.58;
-
-  transform: translateY(-1px);
-
-  box-shadow:
-    0 3px 8px rgba(0, 0, 0, 0.12);
-}
-
-/* ПРАВАЯ КНОПКА */
+/* КНОПКА ЗАПИСАТИСЯ */
 
 .header__button {
   flex-shrink: 0;
@@ -1982,29 +1954,41 @@ box-shadow: 0 4px 14px rgba(0, 0, 0, 0.22);
   justify-content: center;
 
   min-height: 46px;
-  padding: 0 22px;
+  padding: 0 24px;
 
-  border: 1px solid rgba(243, 228, 189, 0.7);
+  background: #df821d;
+  border: 1px solid #df821d;
   border-radius: 10px;
 
-  color: #f3e4bd;
+  color: #ffffff;
 
   font-family: Arial, Helvetica, sans-serif;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 700;
   letter-spacing: 0.8px;
 
   text-decoration: none;
 
+  box-shadow:
+    0 5px 12px rgba(0, 0, 0, 0.16),
+    0 10px 22px rgba(0, 0, 0, 0.08);
+
   transition:
     background 0.25s ease,
-    color 0.25s ease,
-    opacity 0.25s ease;
+    border-color 0.25s ease,
+    transform 0.25s ease,
+    box-shadow 0.25s ease;
 }
 
 .header__button:hover {
-  background: #f3e4bd;
-  color: #4e4e4e;
+  background: #c97014;
+  border-color: #c97014;
+
+  transform: translateY(-1px);
+
+  box-shadow:
+    0 7px 16px rgba(0, 0, 0, 0.18),
+    0 12px 25px rgba(0, 0, 0, 0.1);
 }
 
 /* MOBILE */
@@ -2579,22 +2563,4 @@ box-shadow: 0 4px 14px rgba(0, 0, 0, 0.22);
   font-size: 14px;
   text-decoration: underline;
   text-underline-offset: 4px;
-}
-.payment-result__loader {
-  width: 46px;
-  height: 46px;
-
-  margin: 30px auto 0;
-
-  border: 3px solid rgba(78, 78, 78, 0.18);
-  border-top-color: #df821d;
-  border-radius: 50%;
-
-  animation: payment-spin 0.8s linear infinite;
-}
-
-@keyframes payment-spin {
-  to {
-    transform: rotate(360deg);
-  }
 }

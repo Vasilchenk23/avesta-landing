@@ -22,8 +22,13 @@ const stats = [
 
 export default function Stats() {
   const sectionRef = useRef<HTMLElement | null>(null);
-  const [values, setValues] = useState(stats.map(() => 0));
-  const [hasAnimated, setHasAnimated] = useState(false);
+
+  const [values, setValues] = useState(
+    stats.map(() => 0)
+  );
+
+  const [hasAnimated, setHasAnimated] =
+    useState(false);
 
   useEffect(() => {
     const section = sectionRef.current;
@@ -49,8 +54,9 @@ export default function Stats() {
   useEffect(() => {
     if (!hasAnimated) return;
 
-    const duration = 1500
-    ;
+    // Длительность всей анимации — 5 секунд
+    const duration = 3500;
+
     const startTime = performance.now();
 
     let animationFrame: number;
@@ -58,32 +64,42 @@ export default function Stats() {
     const animate = (currentTime: number) => {
       const elapsed = currentTime - startTime;
 
-      const progress = Math.min(elapsed / duration, 1);
-
-      // Плавное замедление к концу
-      const easedProgress = 1 - Math.pow(1 - progress, 3);
+      // Равномерный прогресс от 0 до 1
+      const progress = Math.min(
+        elapsed / duration,
+        1
+      );
 
       const newValues = stats.map((stat) =>
-        Math.round(stat.value * easedProgress)
+        Math.round(stat.value * progress)
       );
 
       setValues(newValues);
 
       if (progress < 1) {
-        animationFrame = requestAnimationFrame(animate);
+        animationFrame =
+          requestAnimationFrame(animate);
       }
     };
 
-    animationFrame = requestAnimationFrame(animate);
+    animationFrame =
+      requestAnimationFrame(animate);
 
-    return () => cancelAnimationFrame(animationFrame);
+    return () =>
+      cancelAnimationFrame(animationFrame);
   }, [hasAnimated]);
 
   return (
-    <section className="stats" ref={sectionRef}>
+    <section
+      className="stats"
+      ref={sectionRef}
+    >
       <div className="stats__container">
         {stats.map((stat, index) => (
-          <div className="stats__item" key={stat.text}>
+          <div
+            className="stats__item"
+            key={stat.text}
+          >
             <strong className="stats__number">
               {values[index]}
               {stat.suffix}

@@ -206,7 +206,7 @@ function Contacts() {
 
       <div className="payment-result__contact-links">
         <a
-          href="https://t.me/ТВОЙ_TELEGRAM"
+          href="https://t.me/AsrtoAvestaClub"
           target="_blank"
           rel="noopener noreferrer"
         >
@@ -214,7 +214,7 @@ function Contacts() {
         </a>
 
         <a
-          href="https://instagram.com/ТВОЙ_INSTAGRAM"
+          href="https://instagram.com/tanya_avesta?xtok=MTVjeXdvenpjNzN2Yw%3D%3D"
           target="_blank"
           rel="noopener noreferrer"
         >

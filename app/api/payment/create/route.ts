@@ -48,7 +48,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const reference = crypto.randomUUID();
+    const reference = `course-${courseId}-${crypto.randomUUID()}`;
 
     const monoResponse = await fetch(
       "https://api.monobank.ua/api/merchant/invoice/create",
