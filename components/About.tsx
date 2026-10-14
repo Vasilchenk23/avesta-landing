@@ -2,7 +2,7 @@ export default function About() {
   return (
     <section id="about" className="about">
       <div className="about__container">
-        <div className="about__content">
+        <div className="about__content reveal">
           <p className="about__label">Про мене</p>
 
           <h2 className="about__title">
@@ -23,7 +23,7 @@ export default function About() {
 
         </div>
 
-        <div className="about__image">
+        <div className="about__image reveal">
   <img
     src="/images/about.jpg"
     alt="Тетяна Семенова"

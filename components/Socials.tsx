@@ -16,11 +16,21 @@ export default function Socials() {
         </p>
 
         <div className="socials__links">
-          <a href="#" className="socials__link">
+          <a
+            href="https://t.me/AsrtoAvestaClub"
+            className="socials__link"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
             TELEGRAM
           </a>
 
-          <a href="#" className="socials__link">
+          <a
+            href="https://instagram.com/tanya_avesta?xtok=MTVjeXdvenpjNzN2Yw%3D%3D"
+            className="socials__link"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
             INSTAGRAM
           </a>
         </div>

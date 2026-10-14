@@ -3,12 +3,15 @@ export default function Header() {
     <header className="header">
       <div className="header__container">
 
-        <a href="#" className="header__logo">
+        <a href="#hero" className="header__logo">
           AVESTA
         </a>
 
         <nav className="header__nav">
-          <a href="#about">Про мене</a>
+          <a href="#about" className="header__about-link">
+            Про мене
+          </a>
+
           <a href="#services">Послуги</a>
           <a href="#courses">Курси</a>
           <a href="#consultations">Консультації</a>

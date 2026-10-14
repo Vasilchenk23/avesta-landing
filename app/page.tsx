@@ -9,10 +9,13 @@ import Courses from "@/components/Courses";
 import Consultations from "@/components/Consultations";
 import Socials from "@/components/Socials";
 import Contact from "@/components/Contact";
+import ScrollReveal from "@/components/ScrollReveal";
 
 export default function Home() {
   return (
     <>
+      
+      <ScrollReveal />
       <Header />
 
       <main>

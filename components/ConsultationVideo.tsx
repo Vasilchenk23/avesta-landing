@@ -2,7 +2,7 @@ export default function ConsultationVideo() {
   return (
     <section className="consultation-video">
       <div className="consultation-video__container">
-        <div className="consultation-video__content">
+        <div className="consultation-video__content reveal">
           <p className="consultation-video__label">
             ПРОЦЕС КОНСУЛЬТАЦІЇ
           </p>
@@ -21,7 +21,7 @@ export default function ConsultationVideo() {
         
         </div>
 
-        <div className="consultation-video__media">
+        <div className="consultation-video__media reveal">
           <video
             className="consultation-video__video"
             autoPlay

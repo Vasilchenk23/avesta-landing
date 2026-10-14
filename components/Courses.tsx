@@ -1,6 +1,59 @@
+"use client";
+
+import { useState } from "react";
 import { courses } from "@/data/courses";
 
 export default function Courses() {
+  const [loadingId, setLoadingId] = useState<number | null>(null);
+  const [paymentError, setPaymentError] = useState("");
+
+  async function handleBuy(courseId: number) {
+    try {
+      setLoadingId(courseId);
+      setPaymentError("");
+
+      const response = await fetch("/api/payment/create", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          courseId,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Не вдалося створити платіж");
+      }
+
+      if (!data.pageUrl) {
+  throw new Error("Не отримано посилання на оплату");
+}
+
+if (!data.invoiceId) {
+  throw new Error("Не отримано номер платежу");
+}
+
+localStorage.setItem(
+  "avestaInvoiceId",
+  data.invoiceId
+);
+
+window.location.href = data.pageUrl;
+
+    } catch (error) {
+      console.error("Payment error:", error);
+
+      setPaymentError(
+        "Не вдалося перейти до оплати. Спробуйте ще раз."
+      );
+    } finally {
+      setLoadingId(null);
+    }
+  }
+
   return (
     <section className="courses" id="courses">
       <div className="courses__container">
@@ -53,17 +106,27 @@ export default function Courses() {
                   ПОСТАВИТИ ЗАПИТАННЯ
                 </a>
 
-                <a
-                  href="#contact"
+                <button
+                  type="button"
                   className="course-card__button course-card__button--primary"
+                  onClick={() => handleBuy(course.id)}
+                  disabled={loadingId !== null}
                 >
-                  ПРИДБАТИ
-                </a>
+                  {loadingId === course.id
+                    ? "ЗАВАНТАЖЕННЯ..."
+                    : "ПРИДБАТИ"}
+                </button>
               </div>
 
             </article>
           ))}
         </div>
+
+        {paymentError && (
+          <p className="courses__payment-error">
+            {paymentError}
+          </p>
+        )}
 
       </div>
     </section>

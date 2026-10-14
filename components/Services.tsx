@@ -5,7 +5,7 @@ export default function Services() {
     <section className="services" id="services">
       <div className="services__container">
 
-        <div className="services__heading">
+        <div className="services__heading reveal">
           <span className="services__label">ПОСЛУГИ</span>
 
           <h2 className="services__title">
@@ -19,7 +19,7 @@ export default function Services() {
 
         <div className="services__grid">
           {services.map((service) => (
-            <article className="service-card" key={service.id}>
+            <article className="service-card reveal" key={service.id}>
               
               <div className="service-card__image">
   <img
