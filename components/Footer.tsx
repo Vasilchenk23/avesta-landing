@@ -6,7 +6,7 @@ export default function Footer() {
         <div className="footer__top">
 
           <div className="footer__brand">
-            <a href="#" className="footer__logo">
+            <a href="#hero" className="footer__logo">
               AVESTA
             </a>
 
@@ -23,20 +23,29 @@ export default function Footer() {
             <a href="#services">Послуги</a>
             <a href="#courses">Курси</a>
             <a href="#consultations">Консультації</a>
+            <a href="#contact">Контакти</a>
           </div>
 
           <div className="footer__column">
-            <h3>Зв'язок</h3>
+            <h3>Зв&apos;язок</h3>
 
             <a href="#contact">
               Залишити заявку
             </a>
 
-            <a href="#">
+            <a
+              href="https://t.me/AsrtoAvestaClub"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
               Telegram
             </a>
 
-            <a href="#">
+            <a
+              href="https://instagram.com/tanya_avesta?xtok=MTVjeXdvenpjNzN2Yw%3D%3D"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
               Instagram
             </a>
           </div>
@@ -48,7 +57,7 @@ export default function Footer() {
             © {new Date().getFullYear()} AVESTA. Всі права захищені.
           </p>
 
-          <a href="#">
+          <a href="/privacy">
             Політика конфіденційності
           </a>
         </div>
