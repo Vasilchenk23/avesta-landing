@@ -1949,6 +1949,14 @@ box-shadow: 0 4px 14px rgba(0, 0, 0, 0.22);
   width: 100%;
 }
 
+.header__nav .header__about-link:hover {
+  color: #df821d;
+}
+
+.header__nav .header__about-link:hover::after {
+  height: 3px;
+  box-shadow: 0 0 8px rgba(223, 130, 29, 0.45);
+}
 /* КНОПКА ЗАПИСАТИСЯ */
 
 .header__button {
