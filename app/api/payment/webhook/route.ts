@@ -22,7 +22,13 @@ const courses = {
   },
 } as const;
 
-async function getMonoPublicKey(forceRefresh = false) {
+/* =========================
+   PUBLIC KEY MONOBANK
+========================= */
+
+async function getMonoPublicKey(
+  forceRefresh = false
+) {
   if (cachedPublicKey && !forceRefresh) {
     return cachedPublicKey;
   }
@@ -53,7 +59,9 @@ async function getMonoPublicKey(forceRefresh = false) {
   const data = await response.json();
 
   if (!data.key) {
-    throw new Error("Monobank public key is missing");
+    throw new Error(
+      "Monobank public key is missing"
+    );
   }
 
   cachedPublicKey = Buffer.from(
@@ -64,12 +72,17 @@ async function getMonoPublicKey(forceRefresh = false) {
   return cachedPublicKey;
 }
 
+/* =========================
+   SIGNATURE
+========================= */
+
 function verifyMonoSignature(
   body: string,
   signature: string,
   publicKey: string
 ) {
-  const verifier = crypto.createVerify("SHA256");
+  const verifier =
+    crypto.createVerify("SHA256");
 
   verifier.update(body);
   verifier.end();
@@ -80,71 +93,183 @@ function verifyMonoSignature(
   );
 }
 
-async function sendTelegramNotification(body: {
-  invoiceId?: string;
-  status?: string;
-  amount?: number;
-  reference?: string;
-  modifiedDate?: string;
-}) {
-  const botToken = process.env.TELEGRAM_BOT_TOKEN;
-  const chatId = process.env.TELEGRAM_CHAT_ID;
+/* =========================
+   GET INVOICE FROM MONO
+========================= */
+
+async function getInvoiceStatus(
+  invoiceId: string
+) {
+  const token = process.env.MONO_TOKEN;
+
+  if (!token) {
+    throw new Error("MONO_TOKEN is missing");
+  }
+
+  const response = await fetch(
+    `https://api.monobank.ua/api/merchant/invoice/status?invoiceId=${encodeURIComponent(
+      invoiceId
+    )}`,
+    {
+      method: "GET",
+      headers: {
+        "X-Token": token,
+      },
+      cache: "no-store",
+    }
+  );
+
+  if (!response.ok) {
+    const errorText = await response.text();
+
+    console.error(
+      "MONO STATUS ERROR:",
+      response.status,
+      errorText
+    );
+
+    throw new Error(
+      "Failed to get invoice status"
+    );
+  }
+
+  return response.json();
+}
+
+/* =========================
+   TELEGRAM
+========================= */
+
+async function sendTelegramNotification(
+  invoice: any
+) {
+  const botToken =
+    process.env.TELEGRAM_BOT_TOKEN;
+
+  const chatId =
+    process.env.TELEGRAM_CHAT_ID;
 
   if (!botToken || !chatId) {
     console.error(
       "Telegram environment variables are missing"
     );
+
     return;
   }
 
-  const amount = Number(body.amount || 0);
-  const amountInUah = amount / 100;
+  const amount =
+    Number(invoice.amount || 0);
 
-  // Получаем ID курса из reference вида:
-  // course-1-xxxxxxxx
-  const courseIdMatch =
-    body.reference?.match(/^course-(\d+)-/);
+  const amountInUah =
+    amount / 100;
 
-  const courseId = courseIdMatch
-    ? Number(courseIdMatch[1])
-    : null;
+  /*
+    Сначала пытаемся получить courseId
+    из metadata.
+  */
+
+  const metadata =
+    invoice.merchantPaymInfo?.metadata || {};
+
+  let courseId = Number(
+    metadata.courseId || 0
+  );
+
+  /*
+    Если metadata по какой-то причине нет,
+    пробуем reference:
+    course-3-xxxxxxxx
+  */
+
+  if (!courseId) {
+    const reference =
+      invoice.reference ||
+      invoice.merchantPaymInfo?.reference ||
+      "";
+
+    const match =
+      reference.match(/^course-(\d+)-/);
+
+    if (match) {
+      courseId = Number(match[1]);
+    }
+  }
 
   const course =
     courseId && courseId in courses
-      ? courses[courseId as keyof typeof courses]
+      ? courses[
+          courseId as keyof typeof courses
+        ]
       : null;
 
   const courseName =
-    course?.name || "Курс AVESTA";
+    course?.name ||
+    metadata.courseName ||
+    "Курс AVESTA";
 
-  // Дополнительная проверка суммы
-  if (course && course.price !== amount) {
-    console.error("PAYMENT AMOUNT MISMATCH:", {
-      invoiceId: body.invoiceId,
-      courseId,
-      expected: course.price,
-      received: amount,
-    });
+  /*
+    Проверяем сумму.
+    Если курс определён, сумма должна
+    полностью совпадать.
+  */
+
+  if (
+    course &&
+    course.price !== amount
+  ) {
+    console.error(
+      "PAYMENT AMOUNT MISMATCH:",
+      {
+        invoiceId: invoice.invoiceId,
+        courseId,
+        expected: course.price,
+        received: amount,
+      }
+    );
 
     return;
   }
+
+  /* Контактные данные */
+
+  const customerName =
+    metadata.customerName || "—";
+
+  const customerTelegram =
+    metadata.customerTelegram || "—";
+
+  const customerEmail =
+    metadata.customerEmail ||
+    invoice.merchantPaymInfo
+      ?.customerEmails?.[0] ||
+    "—";
 
   const message = [
     "💳 НОВА ОПЛАТА AVESTA",
     "",
     `Курс: ${courseName}`,
     `Сума: ${amountInUah} грн`,
+    "",
+    `👤 Ім'я: ${customerName}`,
+    `✈️ Telegram: ${customerTelegram}`,
+    `📧 Email: ${customerEmail}`,
+    "",
     "Статус: успішно",
-    `Invoice ID: ${body.invoiceId || "—"}`,
+    `Invoice ID: ${
+      invoice.invoiceId || "—"
+    }`,
   ].join("\n");
 
   const response = await fetch(
     `https://api.telegram.org/bot${botToken}/sendMessage`,
     {
       method: "POST",
+
       headers: {
-        "Content-Type": "application/json",
+        "Content-Type":
+          "application/json",
       },
+
       body: JSON.stringify({
         chat_id: chatId,
         text: message,
@@ -153,18 +278,30 @@ async function sendTelegramNotification(body: {
   );
 
   if (!response.ok) {
-    const errorText = await response.text();
+    const errorText =
+      await response.text();
 
     console.error(
       "Telegram payment notification error:",
       errorText
     );
+
+    throw new Error(
+      "Telegram notification failed"
+    );
   }
 }
 
-export async function POST(request: Request) {
+/* =========================
+   WEBHOOK
+========================= */
+
+export async function POST(
+  request: Request
+) {
   try {
-    const signature = request.headers.get("x-sign");
+    const signature =
+      request.headers.get("x-sign");
 
     if (!signature) {
       console.error(
@@ -172,31 +309,43 @@ export async function POST(request: Request) {
       );
 
       return NextResponse.json(
-        { error: "Invalid signature" },
-        { status: 401 }
+        {
+          error: "Invalid signature",
+        },
+        {
+          status: 401,
+        }
       );
     }
 
-    const rawBody = await request.text();
+    const rawBody =
+      await request.text();
 
-    let publicKey = await getMonoPublicKey();
+    let publicKey =
+      await getMonoPublicKey();
 
-    let isValid = verifyMonoSignature(
-      rawBody,
-      signature,
-      publicKey
-    );
-
-    // Если mono обновил публичный ключ —
-    // получаем его заново и проверяем ещё раз
-    if (!isValid) {
-      publicKey = await getMonoPublicKey(true);
-
-      isValid = verifyMonoSignature(
+    let isValid =
+      verifyMonoSignature(
         rawBody,
         signature,
         publicKey
       );
+
+    /*
+      Если mono поменял ключ,
+      обновляем его и проверяем ещё раз.
+    */
+
+    if (!isValid) {
+      publicKey =
+        await getMonoPublicKey(true);
+
+      isValid =
+        verifyMonoSignature(
+          rawBody,
+          signature,
+          publicKey
+        );
     }
 
     if (!isValid) {
@@ -205,31 +354,110 @@ export async function POST(request: Request) {
       );
 
       return NextResponse.json(
-        { error: "Invalid signature" },
-        { status: 401 }
+        {
+          error: "Invalid signature",
+        },
+        {
+          status: 401,
+        }
       );
     }
 
-    const body = JSON.parse(rawBody);
+    const webhook =
+      JSON.parse(rawBody);
 
-    console.log("MONO WEBHOOK VERIFIED:", {
-      invoiceId: body.invoiceId,
-      status: body.status,
-      amount: body.amount,
-      reference: body.reference,
-      modifiedDate: body.modifiedDate,
-    });
+    console.log(
+      "MONO WEBHOOK VERIFIED:",
+      {
+        invoiceId:
+          webhook.invoiceId,
+        status:
+          webhook.status,
+        amount:
+          webhook.amount,
+        modifiedDate:
+          webhook.modifiedDate,
+      }
+    );
 
-    // Telegram отправляем только после успешной оплаты
-    if (body.status === "success") {
-      await sendTelegramNotification(body);
+    /*
+      Нас интересует только
+      успешная оплата.
+    */
+
+    if (
+      webhook.status === "success" &&
+      webhook.invoiceId
+    ) {
+      /*
+        Получаем invoice непосредственно
+        с сервера Monobank.
+      */
+
+      const invoice =
+        await getInvoiceStatus(
+          webhook.invoiceId
+        );
+
+      /*
+        Дополнительная серверная проверка.
+      */
+
+      if (
+        invoice.status !== "success"
+      ) {
+        console.error(
+          "INVOICE STATUS IS NOT SUCCESS:",
+          invoice.status
+        );
+
+        return NextResponse.json(
+          {
+            error:
+              "Payment is not successful",
+          },
+          {
+            status: 400,
+          }
+        );
+      }
+
+      /*
+        invoiceId должен совпадать.
+      */
+
+      if (
+        invoice.invoiceId !==
+        webhook.invoiceId
+      ) {
+        console.error(
+          "INVOICE ID MISMATCH"
+        );
+
+        return NextResponse.json(
+          {
+            error:
+              "Invoice mismatch",
+          },
+          {
+            status: 400,
+          }
+        );
+      }
+
+      await sendTelegramNotification(
+        invoice
+      );
     }
 
     return NextResponse.json({
       ok: true,
     });
   } catch (error) {
-    console.error("Webhook error:", error);
+    console.error(
+      "Webhook error:",
+      error
+    );
 
     return NextResponse.json(
       {

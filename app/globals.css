@@ -2564,3 +2564,249 @@ box-shadow: 0 4px 14px rgba(0, 0, 0, 0.22);
   text-decoration: underline;
   text-underline-offset: 4px;
 }
+
+/* PAYMENT MODAL */
+
+.payment-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 3000;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 24px;
+
+  background: rgba(25, 25, 25, 0.72);
+
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.payment-modal__card {
+  position: relative;
+
+  width: 100%;
+  max-width: 500px;
+
+  max-height: calc(100vh - 48px);
+  overflow-y: auto;
+
+  padding: 42px;
+
+  background: #f3e4bd;
+  border-radius: 18px;
+
+  color: #4e4e4e;
+
+  box-shadow:
+    0 25px 70px rgba(0, 0, 0, 0.3);
+}
+
+.payment-modal__close {
+  position: absolute;
+  top: 16px;
+  right: 18px;
+
+  width: 36px;
+  height: 36px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 0;
+
+  border: 0;
+  background: transparent;
+
+  color: #4e4e4e;
+
+  font-size: 30px;
+  font-weight: 300;
+  line-height: 1;
+
+  cursor: pointer;
+
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s ease;
+}
+
+.payment-modal__close:hover {
+  opacity: 0.6;
+  transform: scale(1.05);
+}
+
+.payment-modal__label {
+  display: block;
+
+  margin-bottom: 12px;
+
+  color: #df821d;
+
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+}
+
+.payment-modal__title {
+  margin: 0;
+
+  font-family:
+    "Cormorant Garamond",
+    Georgia,
+    "Times New Roman",
+    serif;
+
+  font-size: 36px;
+  font-weight: 600;
+  line-height: 1.05;
+
+  color: #4e4e4e;
+}
+
+.payment-modal__price {
+  margin: 10px 0 20px;
+
+  color: #df821d;
+
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.payment-modal__text {
+  margin: 0 0 28px;
+
+  color: rgba(78, 78, 78, 0.8);
+
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.payment-modal__form {
+  display: flex;
+  flex-direction: column;
+
+  gap: 18px;
+}
+
+.payment-modal__field {
+  display: flex;
+  flex-direction: column;
+
+  gap: 8px;
+
+  color: #4e4e4e;
+
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.payment-modal__field input {
+  width: 100%;
+  height: 50px;
+
+  padding: 0 16px;
+
+  border: 1px solid rgba(78, 78, 78, 0.22);
+  border-radius: 9px;
+
+  outline: none;
+
+  background: rgba(255, 255, 255, 0.55);
+
+  color: #4e4e4e;
+
+  font-size: 15px;
+
+  transition:
+    border-color 0.2s ease,
+    background 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.payment-modal__field input:focus {
+  border-color: #df821d;
+
+  background: rgba(255, 255, 255, 0.8);
+
+  box-shadow:
+    0 0 0 3px rgba(223, 130, 29, 0.12);
+}
+
+.payment-modal__field input::placeholder {
+  color: rgba(78, 78, 78, 0.45);
+}
+
+.payment-modal__submit {
+  width: 100%;
+  min-height: 52px;
+
+  margin-top: 4px;
+
+  border: 0;
+  border-radius: 10px;
+
+  background: #df821d;
+  color: #ffffff;
+
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+
+  cursor: pointer;
+
+  transition:
+    background 0.25s ease,
+    transform 0.25s ease;
+}
+
+.payment-modal__submit:hover:not(:disabled) {
+  background: #c97014;
+  transform: translateY(-1px);
+}
+
+.payment-modal__submit:disabled {
+  opacity: 0.65;
+  cursor: wait;
+}
+
+.payment-modal__error {
+  margin: 0;
+
+  color: #a23b32;
+
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.payment-modal__note {
+  margin: -5px 0 0;
+
+  text-align: center;
+
+  color: rgba(78, 78, 78, 0.6);
+
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+@media (max-width: 600px) {
+  .payment-modal {
+    padding: 14px;
+  }
+
+  .payment-modal__card {
+    max-height: calc(100vh - 28px);
+
+    padding: 36px 22px 26px;
+
+    border-radius: 14px;
+  }
+
+  .payment-modal__title {
+    font-size: 30px;
+  }
+}
