@@ -26,6 +26,7 @@ async function sendNewOrderToTelegram({
   courseName,
   amount,
   name,
+  phone,
   telegram,
   email,
 }: {
@@ -33,20 +34,17 @@ async function sendNewOrderToTelegram({
   courseName: string;
   amount: number;
   name: string;
+  phone: string;
   telegram: string;
   email: string;
 }) {
-  const botToken =
-    process.env.TELEGRAM_BOT_TOKEN;
-
-  const chatId =
-    process.env.TELEGRAM_CHAT_ID;
+  const botToken = process.env.TELEGRAM_BOT_TOKEN;
+  const chatId = process.env.TELEGRAM_CHAT_ID;
 
   if (!botToken || !chatId) {
     console.error(
       "Telegram environment variables are missing"
     );
-
     return;
   }
 
@@ -59,6 +57,7 @@ async function sendNewOrderToTelegram({
     `Сума: ${amountInUah} грн`,
     "",
     `👤 Ім'я: ${name}`,
+    `📞 Телефон: ${phone}`,
     `✈️ Telegram: ${telegram}`,
     `📧 Email: ${email}`,
     "",
@@ -70,11 +69,9 @@ async function sendNewOrderToTelegram({
     `https://api.telegram.org/bot${botToken}/sendMessage`,
     {
       method: "POST",
-
       headers: {
         "Content-Type": "application/json",
       },
-
       body: JSON.stringify({
         chat_id: chatId,
         text: message,
@@ -83,8 +80,7 @@ async function sendNewOrderToTelegram({
   );
 
   if (!response.ok) {
-    const errorText =
-      await response.text();
+    const errorText = await response.text();
 
     console.error(
       "Telegram new order notification error:",
@@ -97,11 +93,14 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
 
-    const courseId =
-      Number(body.courseId);
+    const courseId = Number(body.courseId);
 
     const name = String(
       body.customer?.name || ""
+    ).trim();
+
+    const phone = String(
+      body.customer?.phone || ""
     ).trim();
 
     const telegram = String(
@@ -114,12 +113,9 @@ export async function POST(request: Request) {
       .trim()
       .toLowerCase();
 
-    /* Проверяем курс */
+    // Проверяем курс
 
-    if (
-      !courseId ||
-      !(courseId in courses)
-    ) {
+    if (!courseId || !(courseId in courses)) {
       return NextResponse.json(
         {
           error: "Невідомий курс",
@@ -130,17 +126,13 @@ export async function POST(request: Request) {
       );
     }
 
-    /* Проверяем контакты */
+    // Проверяем обязательные контакты
 
-    if (
-      !name ||
-      !telegram ||
-      !email
-    ) {
+    if (!name || !phone || !telegram || !email) {
       return NextResponse.json(
         {
           error:
-            "Необхідно вказати ім'я, Telegram та Email",
+            "Необхідно вказати ім'я, телефон, Telegram та Email",
         },
         {
           status: 400,
@@ -148,12 +140,27 @@ export async function POST(request: Request) {
       );
     }
 
-    /* Проверяем email */
+    // Telegram должен быть указан как @username
+
+    if (
+      !telegram.startsWith("@") ||
+      telegram.length < 2
+    ) {
+      return NextResponse.json(
+        {
+          error:
+            "Вкажіть Telegram нікнейм у форматі @username",
+        },
+        {
+          status: 400,
+        }
+      );
+    }
+
+    // Проверяем Email
 
     const emailIsValid =
-      /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(
-        email
-      );
+      /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
     if (!emailIsValid) {
       return NextResponse.json(
@@ -166,10 +173,11 @@ export async function POST(request: Request) {
       );
     }
 
-    /* Ограничиваем длину */
+    // Ограничиваем длину данных
 
     if (
       name.length > 100 ||
+      phone.length > 50 ||
       telegram.length > 100 ||
       email.length > 200
     ) {
@@ -187,13 +195,10 @@ export async function POST(request: Request) {
     const course =
       courses[courseId as CourseId];
 
-    const token =
-      process.env.MONO_TOKEN;
+    const token = process.env.MONO_TOKEN;
 
     if (!token) {
-      console.error(
-        "MONO_TOKEN is missing"
-      );
+      console.error("MONO_TOKEN is missing");
 
       return NextResponse.json(
         {
@@ -209,36 +214,27 @@ export async function POST(request: Request) {
     const reference =
       `course-${courseId}-${crypto.randomUUID()}`;
 
-    /* Создаём invoice */
+    // Создаём invoice Monobank
 
     const monoResponse = await fetch(
       "https://api.monobank.ua/api/merchant/invoice/create",
       {
         method: "POST",
-
         headers: {
-          "Content-Type":
-            "application/json",
+          "Content-Type": "application/json",
           "X-Token": token,
         },
-
         body: JSON.stringify({
           amount: course.price,
-
           ccy: 980,
 
           merchantPaymInfo: {
             reference,
-
             destination:
               `Оплата курсу: ${course.name}`,
-
             comment:
               `AVESTA — ${course.name}`,
-
-            customerEmails: [
-              email,
-            ],
+            customerEmails: [email],
           },
 
           redirectUrl:
@@ -250,8 +246,7 @@ export async function POST(request: Request) {
       }
     );
 
-    const data =
-      await monoResponse.json();
+    const data = await monoResponse.json();
 
     if (!monoResponse.ok) {
       console.error(
@@ -265,16 +260,12 @@ export async function POST(request: Request) {
             "Не вдалося створити платіж",
         },
         {
-          status:
-            monoResponse.status,
+          status: monoResponse.status,
         }
       );
     }
 
-    if (
-      !data.invoiceId ||
-      !data.pageUrl
-    ) {
+    if (!data.invoiceId || !data.pageUrl) {
       console.error(
         "Invalid Monobank invoice response:",
         data
@@ -291,18 +282,14 @@ export async function POST(request: Request) {
       );
     }
 
-    /*
-      Invoice уже существует.
-
-      Теперь отправляем контакты
-      покупателя в Telegram.
-    */
+    // Отправляем данные заказа в Telegram
 
     await sendNewOrderToTelegram({
       invoiceId: data.invoiceId,
       courseName: course.name,
       amount: course.price,
       name,
+      phone,
       telegram,
       email,
     });

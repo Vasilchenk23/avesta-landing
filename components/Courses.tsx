@@ -5,6 +5,7 @@ import { courses } from "@/data/courses";
 
 type CustomerForm = {
   name: string;
+  phone: string;
   telegram: string;
   email: string;
 };
@@ -22,6 +23,7 @@ export default function Courses() {
   const [customer, setCustomer] =
     useState<CustomerForm>({
       name: "",
+      phone: "",
       telegram: "",
       email: "",
     });
@@ -50,12 +52,23 @@ export default function Courses() {
     if (!selectedCourseId) return;
 
     const name = customer.name.trim();
+    const phone = customer.phone.trim();
     const telegram = customer.telegram.trim();
     const email = customer.email.trim();
 
-    if (!name || !telegram || !email) {
+    if (!name || !phone || !telegram || !email) {
       setPaymentError(
         "Будь ласка, заповніть усі поля."
+      );
+      return;
+    }
+
+    if (
+      !telegram.startsWith("@") ||
+      telegram.length < 2
+    ) {
+      setPaymentError(
+        "Вкажіть Telegram нікнейм у форматі @username."
       );
       return;
     }
@@ -75,6 +88,7 @@ export default function Courses() {
             courseId: selectedCourseId,
             customer: {
               name,
+              phone,
               telegram,
               email,
             },
@@ -242,7 +256,7 @@ export default function Courses() {
               onSubmit={handleBuy}
             >
               <label className="payment-modal__field">
-                <span>Ім&apos;я</span>
+                <span>Ім&apos;я *</span>
 
                 <input
                   type="text"
@@ -260,7 +274,27 @@ export default function Courses() {
               </label>
 
               <label className="payment-modal__field">
-                <span>Telegram</span>
+                <span>Номер телефону *</span>
+
+                <input
+                  type="tel"
+                  value={customer.phone}
+                  onChange={(event) =>
+                    setCustomer({
+                      ...customer,
+                      phone: event.target.value,
+                    })
+                  }
+                  placeholder="+380 XX XXX XX XX"
+                  autoComplete="tel"
+                  required
+                />
+              </label>
+
+              <label className="payment-modal__field">
+                <span>
+                  Telegram нікнейм *
+                </span>
 
                 <input
                   type="text"
@@ -278,7 +312,7 @@ export default function Courses() {
               </label>
 
               <label className="payment-modal__field">
-                <span>Email</span>
+                <span>Email *</span>
 
                 <input
                   type="email"
