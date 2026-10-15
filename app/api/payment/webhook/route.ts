@@ -238,17 +238,13 @@ async function sendTelegramNotification(
   }
 
   const message = [
-    "✅ ЗАМОВЛЕННЯ УСПІШНО ОПЛАЧЕНО",
-    "",
-    `Курс: ${courseName}`,
-    `Сума: ${amountInUah} грн`,
-    "",
-    `Invoice ID: ${
-      invoice.invoiceId || "—"
-    }`,
-    "",
-    "➡️ Можна видавати доступ",
-  ].join("\n");
+  "✅ ЗАМОВЛЕННЯ УСПІШНО ОПЛАЧЕНО",
+  "",
+  `Курс: ${courseName}`,
+  `Сума: ${amountInUah} грн`,
+  "",
+  `Invoice ID: ${invoice.invoiceId || "—"}`,
+].join("\n");
 
   const response = await fetch(
     `https://api.telegram.org/bot${botToken}/sendMessage`,
